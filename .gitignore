@@ -3,6 +3,8 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,macos,linux,windows,visualstudiocode,pycharm,vim,emacs,coq
 
 ### Coq ###
+Makefile.coq
+Makefile.coq.conf
 .*.aux
 .*.d
 *.a
@@ -121,7 +123,8 @@ flycheck_*.el
 .LSOverride
 
 # Icon must end with two \r
-Icon
+Icon
+
 
 # Thumbnails
 ._*
