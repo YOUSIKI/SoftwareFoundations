@@ -1,7 +1,7 @@
 (** * Basics: Functional Programming in Coq *)
 
 (*
-  All problems are finished by YouSiki <yousiki@pku.edu.cn> alone. 2022-2-28 18:55
+  All problems are finished by YouSiki <yousiki@pku.edu.cn> alone. 2022-2-28
 *)
 
 (* REMINDER:
