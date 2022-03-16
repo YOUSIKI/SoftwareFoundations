@@ -109,7 +109,8 @@ Theorem rev_exercise1 : forall (l l' : list nat),
   l = rev l' ->
   l' = rev l.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. symmetry. rewrite H. rewrite rev_involutive. reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 1 star, standard, optional (apply_rewrite)
@@ -279,7 +280,14 @@ Example injection_ex3 : forall (X : Type) (x y z : X) (l j : list X),
   j = z :: l ->
   x = y.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros X x y z l j H.
+  injection H as H1 H2.
+  rewrite <- H2.
+  intros H3.
+  injection H3 as H4.
+  rewrite H1. rewrite H4.
+  reflexivity.
+Qed.
 (** [] *)
 
 (** So much for injectivity of constructors.  What about disjointness? *)
@@ -327,7 +335,9 @@ Example discriminate_ex3 :
     x :: y :: l = [] ->
     x = z.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros X x y z l j contra.
+  discriminate contra.
+Qed.
 (** [] *)
 
 (** For a slightly more involved example, we can use [discriminate] to
@@ -593,7 +603,18 @@ Proof.
 Theorem eqb_true : forall n m,
   n =? m = true -> n = m.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n.
+  induction n as [| n' IHn'].
+  simpl. intros m eq. destruct m as [| m'].
+  reflexivity. discriminate eq.
+  intros m eq. destruct m as [| m'].
+  discriminate eq.
+  apply f_equal.
+  apply IHn'.
+  simpl in eq.
+  rewrite eq.
+  reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, advanced (eqb_true_informal)
@@ -601,7 +622,32 @@ Proof.
     Give a careful informal proof of [eqb_true], being as explicit
     as possible about quantifiers. *)
 
-(* FILL IN HERE *)
+(**
+Theorem eqb_true: Forall n, m,
+  n =? m = true -> n = m.
+Proof:
+  By induction on [n].
+  - First, suppose [n = 0]. We must show that
+    Forall m, (0 =? m) = true -> 0 = m.
+    By destruct on [m].
+    + Suppose [m = 0]. Then (0 =? m) is true. We must show that 0 = m. Which can be simply proofed using reflexivity.
+    + Suppose [m = S m']. Then (0 =? m) is false. This is conflict with hypothesis (0 =? m) = true.
+  - Second, suppose [n = S n]. We must show that
+    Forall m, S n' = m, where
+    (S n' =? m) = true,
+    forall m, (n' =? m) = true -> n' = m.
+    By destruct on [m].
+    + Suppose [m = 0]. This is conflict with the hypothesis (S n' =? m) = true.
+    + Suppose [m = S m']. Then we must show that
+      S n' = S m', where
+      (S n' =? S m') = true,
+      forall m, (n' =? m) = true -> n' = m.
+      By the definition of [nat], the goal can be rewrite as
+      n' = m'.
+      And we only need to proof
+      (n' = m') = true,
+      which is immediate from the hypothesis (S n' = S m') = true. Qed.
+**)
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_informal_proof : option (nat*string) := None.
@@ -611,11 +657,32 @@ Definition manual_grade_for_informal_proof : option (nat*string) := None.
 
     In addition to being careful about how you use [intros], practice
     using "in" variants in this proof.  (Hint: use [plus_n_Sm].) *)
+Check plus_n_Sm.
+(* plus_n_Sm
+	 : forall n m : nat, S (n + m) = n + S m *)
+
+Search (S _ = S _ -> _ = _).
+(* eq_add_S: forall n m : nat, S n = S m -> n = m *)
+
 Theorem plus_n_n_injective : forall n m,
   n + n = m + m ->
   n = m.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n. induction n as [| n' IHn].
+  - destruct m.
+    + reflexivity.
+    + intros H. discriminate H.
+  - destruct m as [| m'].
+    + intros H. discriminate H.
+    + intros H. apply f_equal. apply IHn.
+      rewrite <- plus_n_Sm in H.
+      rewrite <- plus_n_Sm in H.
+      apply eq_add_S in H.
+      simpl in H.
+      apply eq_add_S in H.
+      rewrite H.
+      reflexivity.
+Qed.
 (** [] *)
 
 (** The strategy of doing fewer [intros] before an [induction] to
@@ -722,7 +789,12 @@ Theorem nth_error_after_last: forall (n : nat) (X : Type) (l : list X),
   length l = n ->
   nth_error l n = None.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n X l. generalize dependent n. induction l as [| hd tl IHl].
+  - reflexivity.
+  - intros n H. destruct n as [|n'].
+    + discriminate H.
+    + simpl. simpl in H. apply IHl. apply eq_add_S in H. rewrite H. reflexivity.
+Qed.
 (** [] *)
 
 (* ################################################################# *)
@@ -907,7 +979,16 @@ Theorem combine_split : forall X Y (l : list (X * Y)) l1 l2,
   split l = (l1, l2) ->
   combine l1 l2 = l.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros X Y l. induction l as [|hd tl IHl].
+  - intros. inversion H. reflexivity.
+  - intros. destruct l1 as [|h1 t1], l2 as [|h2 t2].
+    + simpl in H. destruct hd, (split tl) in H. discriminate H.
+    + simpl in H. destruct hd, (split tl) in H. discriminate H.
+    + simpl in H. destruct hd, (split tl) in H. discriminate H.
+    + simpl in H. destruct hd, (split tl).
+      simpl. inversion H. replace tl with (combine t1 t2). reflexivity.
+      apply IHl. rewrite H2, H4. reflexivity.
+Qed.
 (** [] *)
 
 (** The [eqn:] part of the [destruct] tactic is optional; although
@@ -982,7 +1063,16 @@ Theorem bool_fn_applied_thrice :
   forall (f : bool -> bool) (b : bool),
   f (f (f b)) = f b.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. destruct (f true) eqn:ft, (f false) eqn:ff, b.
+  - rewrite ft, ft, ft. reflexivity.
+  - rewrite ff, ft, ft. reflexivity.
+  - rewrite ft, ft, ft. reflexivity.
+  - rewrite ff, ff, ff. reflexivity.
+  - rewrite ft, ff, ft. reflexivity.
+  - rewrite ff, ft, ff. reflexivity.
+  - rewrite ft, ff, ff. reflexivity.
+  - rewrite ff, ff, ff. reflexivity.
+Qed.
 (** [] *)
 
 (* ################################################################# *)
@@ -1063,7 +1153,12 @@ Proof.
 Theorem eqb_sym : forall (n m : nat),
   (n =? m) = (m =? n).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  induction n, m.
+  - reflexivity.
+  - reflexivity.
+  - reflexivity.
+  - simpl. apply IHn.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, advanced, optional (eqb_sym_informal)
