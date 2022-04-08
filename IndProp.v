@@ -156,11 +156,25 @@ Proof.
   apply ev_SS. apply ev_SS. apply Hn.
 Qed.
 
+Print double.
+(* 
+double = 
+fix double (n : nat) : nat :=
+  match n with
+  | 0 => 0
+  | S n' => S (S (double n'))
+  end
+	 : nat -> nat 
+*)
+
 (** **** Exercise: 1 star, standard (ev_double) *)
 Theorem ev_double : forall n,
   ev (double n).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n. induction n.
+  - simpl. apply ev_0.
+  - simpl. apply ev_SS. apply IHn.
+Qed. 
 (** [] *)
 
 (* ################################################################# *)
@@ -336,7 +350,8 @@ Proof.
 Theorem SSSSev__even : forall n,
   ev (S (S (S (S n)))) -> ev n.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n H. inversion H. inversion H1. apply H3.
+Qed.
 (** [] *)
 
 (** **** Exercise: 1 star, standard (ev5_nonsense)
@@ -346,7 +361,8 @@ Proof.
 Theorem ev5_nonsense :
   ev 5 -> 2 + 2 = 9.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros H. inversion H. inversion H1. inversion H3.
+Qed.
 (** [] *)
 
 (** The [inversion] tactic does quite a bit of work. For
@@ -511,7 +527,11 @@ Qed.
 (** **** Exercise: 2 stars, standard (ev_sum) *)
 Theorem ev_sum : forall n m, ev n -> ev m -> ev (n + m).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n m Hn Hm.
+  induction Hn.
+  simpl. apply Hm.
+  simpl. apply ev_SS. apply IHHn.
+Qed.
 (** [] *)
 
 (** **** Exercise: 4 stars, advanced, optional (ev'_ev)
@@ -805,7 +825,20 @@ Inductive R : nat -> nat -> nat -> Prop :=
       would the set of provable propositions change?  Briefly (1
       sentence) explain your answer. *)
 
-(* FILL IN HERE *)
+(* 
+  - [R 1 1 2] is provable. 
+  - No, the provable propositions will not change.
+    Any [R m n o] is provable where m + n = o.
+    [c5] can switch m and n. Ff there is a proof for
+    [R n m o] then there must be a symmetrical proof
+    for [R m n o].
+  - No, the provable propositions will not change.
+    Any [R m n o] where m + n = o can be constructed 
+    from [c1] through [c2] and [c3]. If [c4] is used,
+    there must be at least one [c2] and [c3] before [c4],
+    then we can just remove them together and the relation
+    will not change.
+  *)
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_R_provability : option (nat*string) := None.
@@ -1125,13 +1158,17 @@ Qed.
 Lemma empty_is_empty : forall T (s : list T),
   ~ (s =~ EmptySet).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. intros H. inversion H.
+Qed.
 
 Lemma MUnion' : forall T (s : list T) (re1 re2 : reg_exp T),
   s =~ re1 \/ s =~ re2 ->
   s =~ Union re1 re2.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. destruct H.
+  - apply MUnionL. apply H.
+  - apply MUnionR. apply H.
+Qed.
 
 (** The next lemma is stated in terms of the [fold] function from the
     [Poly] chapter: If [ss : list (list T)] represents a sequence of
@@ -1142,7 +1179,12 @@ Lemma MStar' : forall T (ss : list (list T)) (re : reg_exp T),
   (forall s, In s ss -> s =~ re) ->
   fold app ss [] =~ Star re.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. induction ss.
+  - simpl. apply MStar0.
+  - simpl. apply MStarApp.
+    + apply H. simpl. left. reflexivity.
+    + apply IHss. intros. apply H. simpl. right. apply H0.
+Qed.
 (** [] *)
 
 (** **** Exercise: 4 stars, standard, optional (reg_exp_of_list_spec)
@@ -1242,13 +1284,44 @@ Qed.
     regular expression matches some string. Prove that your function
     is correct. *)
 
-Fixpoint re_not_empty {T : Type} (re : reg_exp T) : bool
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Fixpoint re_not_empty {T : Type} (re : reg_exp T) : bool :=
+  match re with
+  | EmptySet => false
+  | EmptyStr => true
+  | Char x => true
+  | App re1 re2 => (re_not_empty re1) && (re_not_empty re2)
+  | Union re1 re2 => (re_not_empty re1) || (re_not_empty re2)
+  | Star re => true
+  end.
 
 Lemma re_not_empty_correct : forall T (re : reg_exp T),
   (exists s, s =~ re) <-> re_not_empty re = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. split.
+  - induction re.
+    + intros. inversion H. inversion H0.
+    + intros. reflexivity.
+    + intros. reflexivity.
+    + intros. inversion H. simpl. apply andb_true_iff. inversion H0. split.
+      * apply IHre1. now exists s1.
+      * apply IHre2. now exists s2.
+    + intros. inversion H. simpl. inversion H0.
+      * apply orb_true_iff. left. apply IHre1. now exists x.
+      * apply orb_true_iff. right. apply IHre2. now exists x.
+    + intros. reflexivity.
+  - induction re.
+    + intros. inversion H.
+    + intros. exists []. apply MEmpty.
+    + intros. exists [t]. apply MChar.
+    + intros. inversion H. apply andb_true_iff in H1. inversion H1.
+      apply IHre1 in H0. inversion H0.
+      apply IHre2 in H2. inversion H2.
+      exists (x ++ x0). apply MApp. apply H3. apply H4.
+    + intros. inversion H. apply orb_true_iff in H1. inversion H1.
+      apply IHre1 in H0. inversion H0. exists x. apply MUnionL. apply H2.
+      apply IHre2 in H0. inversion H0. exists x. apply MUnionR. apply H2.
+    + intros. exists []. apply MStar0.
+Qed.
 (** [] *)
 
 (* ================================================================= *)
