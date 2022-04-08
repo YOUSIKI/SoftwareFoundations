@@ -72,7 +72,10 @@ Proof.
 Theorem plus_one_r' : forall n:nat,
   n + 1 = S n.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  apply nat_ind.
+  - reflexivity.
+  - simpl. intros n IHn'. rewrite IHn'. reflexivity.
+Qed.
 (** [] *)
 
 (** Coq generates induction principles for every datatype
@@ -120,6 +123,11 @@ Inductive rgb : Type :=
   | green
   | blue.
 Check rgb_ind.
+(* 
+rgb_ind
+	 : forall P : rgb -> Prop,
+       P red -> P green -> P blue -> forall r : rgb, P r
+*)
 (** [] *)
 
 (** Here's another example, this time with one of the constructors
@@ -181,8 +189,13 @@ Inductive booltree : Type :=
   | bt_leaf (b : bool)
   | bt_branch (b : bool) (t1 t2 : booltree).
 
-(* FILL IN HERE:
-   ... *)
+(*
+forall P : booltree -> Prop,
+  P bt_empty ->
+  (forall b : bool, P (bt_leaf b)) ->
+  (forall t1 t2 : booltree, P t1 -> P t2 -> (forall b : bool, P (bt_branch b t1 t2))) ->
+  forall bt : booltree, P bt.
+ *)
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_booltree_ind : option (nat*string) := None.
@@ -201,8 +214,11 @@ Definition manual_grade_for_booltree_ind : option (nat*string) := None.
     principle Coq generates is that given above: *)
 
 Inductive Toy : Type :=
-  (* FILL IN HERE *)
-.
+  | con1 (b : bool)
+  | con2 (n : nat) (t : Toy).
+
+Check Toy_ind.
+
 (* Do not modify the following line: *)
 Definition manual_grade_for_toy_ind : option (nat*string) := None.
 (** [] *)
