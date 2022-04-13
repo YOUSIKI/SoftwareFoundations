@@ -225,7 +225,8 @@ Proof. reflexivity. Qed.
 Lemma t_apply_empty : forall (A : Type) (x : string) (v : A),
   (_ !-> v) x = v.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. unfold t_empty. reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, standard, optional (t_update_eq)
@@ -237,7 +238,8 @@ Proof.
 Lemma t_update_eq : forall (A : Type) (m : total_map A) x v,
   (x !-> v ; m) x = v.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. unfold t_update. rewrite <- eqb_string_refl. reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, standard, optional (t_update_neq)
@@ -250,7 +252,8 @@ Theorem t_update_neq : forall (A : Type) (m : total_map A) x1 x2 v,
   x1 <> x2 ->
   (x1 !-> v ; m) x2 = m x2.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. unfold t_update. apply eqb_string_false_iff in H. rewrite H. reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, standard, optional (t_update_shadow)
@@ -296,10 +299,15 @@ Proof.
     if we update a map to assign key [x] the same value as it already
     has in [m], then the result is equal to [m]: *)
 
+Print eqb_stringP.
+
 Theorem t_update_same : forall (A : Type) (m : total_map A) x,
   (x !-> m x ; m) = m.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. extensionality i. unfold t_update. destruct (eqb_string x i) eqn:H.
+  - apply eqb_string_true_iff in H. rewrite H. reflexivity.
+  - reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard, especially useful (t_update_permute)
@@ -315,7 +323,12 @@ Theorem t_update_permute : forall (A : Type) (m : total_map A)
   =
   (x2 !-> v2 ; x1 !-> v1 ; m).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. extensionality i. unfold t_update. destruct (eqb_string x1 i) eqn:H1, (eqb_string x2 i) eqn:H2.
+  - apply eqb_string_true_iff in H1, H2. subst. exfalso. apply H. reflexivity.
+  - reflexivity.
+  - reflexivity.
+  - reflexivity.
+Qed. 
 (** [] *)
 
 (* ################################################################# *)
