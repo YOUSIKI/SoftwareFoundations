@@ -152,7 +152,15 @@ Theorem skip_right : forall c,
     <{ c ; skip }>
     c.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros c st st'.
+  split; intros H.
+  - inversion H. subst.
+    inversion H5. subst.
+    assumption.
+  - apply E_Seq with st'.
+    assumption.
+    apply E_Skip.
+Qed.
 (** [] *)
 
 (** Similarly, here is a simple transformation that optimizes [if]
@@ -240,7 +248,21 @@ Theorem if_false : forall b c1 c2,
     <{ if b then c1 else c2 end }>
     c2.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros b c1 c2 Hb.
+  split; intros H.
+  - (* -> *)
+    inversion H. subst.
+    + (* b evaluates to true *)
+      unfold bequiv in Hb. simpl in Hb.
+      rewrite Hb in H5.
+      discriminate.
+    + (* b evaluates to false *)
+      assumption.
+  - (* <- *)
+    apply E_IfFalse; try assumption.
+    unfold bequiv in Hb. simpl in Hb.
+    apply Hb.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard (swap_if_branches)
@@ -253,7 +275,25 @@ Theorem swap_if_branches : forall b c1 c2,
     <{ if b then c1 else c2 end }>
     <{ if ~ b then c2 else c1 end }>.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros b c1 c2 st.
+  split; intros H.
+  - (* -> *)
+    inversion H. subst.
+    + (* b evaluates to true *)
+      apply E_IfFalse; try assumption.
+      simpl. rewrite H5. simpl. reflexivity.
+    + (* b evaluates to false *)
+      apply E_IfTrue; try assumption.
+      simpl. rewrite H5. simpl. reflexivity.
+  - (* <- *)
+    inversion H. subst.
+    + (* ~ b evaluates to true *)
+      apply E_IfFalse; try assumption.
+      inversion H5. apply negb_true_iff in H1. apply H1.
+    + (* ~ b evaluates to false *)
+      apply E_IfTrue; try assumption.
+      inversion H5. subst. apply negb_false_iff in H8. apply H8.
+Qed.
 (** [] *)
 
 (** For [while] loops, we can give a similar pair of theorems.  A loop
@@ -355,7 +395,19 @@ Theorem while_true : forall b c,
     <{ while b do c end }>
     <{ while true do skip end }>.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros b c Hb.
+  split; intros H.
+  - (* -> *)
+    inversion H; subst.
+    + (* b evaluates to false *)
+      rewrite Hb in H4.
+      discriminate.
+    + (* b evaluates to true *)
+      apply while_true_nonterm in H. inversion H. apply Hb.
+  - (* <- *) 
+    inversion H; subst; apply while_true_nonterm in H; inversion H; unfold bequiv; intros; reflexivity.
+Qed.
+      
 (** [] *)
 
 (** A more interesting fact about [while] commands is that any number
@@ -421,7 +473,19 @@ Theorem assign_aequiv : forall (x : string) a,
   aequiv x a ->
   cequiv <{ skip }> <{ x := a }>.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. split; intros.
+  - replace st' with (x !-> st' x ; st').
+    inversion H0; subst. constructor.
+    symmetry. apply H.
+    apply functional_extensionality. intros.
+    rewrite t_update_same. reflexivity.
+  - inversion H0; subst.
+    replace (x !-> aeval st a ; st) with st.
+    apply E_Skip.
+    apply functional_extensionality. intros.
+    unfold aequiv in H. symmetry in H. rewrite H.
+    rewrite t_update_same. reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, standard (equiv_classes) *)
@@ -443,6 +507,8 @@ Definition prog_a : com :=
        X := X + 1
      end }>.
 
+(* infinity loop if x > 0 *)
+
 Definition prog_b : com :=
   <{ if (X = 0) then
        X := X + 1;
@@ -453,16 +519,24 @@ Definition prog_b : com :=
      X := X - Y;
      Y := 0 }>.
 
+(* y = 0 *)
+
 Definition prog_c : com :=
   <{ skip }> .
+
+(* do nothing *)
 
 Definition prog_d : com :=
   <{ while ~(X = 0) do
        X := (X * Y) + 1
      end }>.
 
+(* infinity loop if x > 0 *)
+
 Definition prog_e : com :=
   <{ Y := 0 }>.
+
+(* y = 0 *)
 
 Definition prog_f : com :=
   <{ Y := X + 1;
@@ -470,23 +544,35 @@ Definition prog_f : com :=
        Y := X + 1
      end }>.
 
+(* infinity loop *)
+
 Definition prog_g : com :=
   <{ while true do
        skip
      end }>.
+
+(* infinity loop *)
 
 Definition prog_h : com :=
   <{ while ~(X = X) do
        X := X + 1
      end }>.
 
+(* do nothing *)
+
 Definition prog_i : com :=
   <{ while ~(X = Y) do
        X := Y + 1
      end }>.
 
-Definition equiv_classes : list (list com)
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+(* infinity loop if x != y *)
+
+Definition equiv_classes : list (list com) :=
+  [ (* do nothing *) [prog_c;prog_h] ;
+    (* y = 0 *) [prog_b;prog_e] ;
+    (* infinity loop *) [prog_f;prog_g] ;
+    (* infinity loop if x > 0 *) [prog_a;prog_d] ;
+    (* infinity loop if x != y *) [prog_i] ].
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_equiv_classes : option (nat*string) := None.
@@ -684,7 +770,24 @@ Theorem CIf_congruence : forall b b' c1 c1' c2 c2',
   cequiv <{ if b then c1 else c2 end }>
          <{ if b' then c1' else c2' end }>.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  (* Prove one direction and reuse *)
+  assert (A: forall (b b' : bexp) (c1 c2 c1' c2' : com) (st st' : state),
+    bequiv b b' -> cequiv c1 c1' -> cequiv c2 c2' ->
+    st =[ if b then c1 else c2 end ]=> st' ->
+    st =[ if b' then c1' else c2' end ]=> st'). {
+      unfold bequiv, cequiv. intros.
+      remember <{ if b then c1 else c2 end }> as cif.
+      induction H2; inversion Heqcif; subst.
+      + apply E_IfTrue. rewrite <- H2. symmetry. apply H. apply H0. apply H3.
+      + apply E_IfFalse. rewrite <- H2. symmetry. apply H. apply H1. apply H3.
+    }
+  intros. split.
+  - apply A; assumption.
+  - apply A.
+    + apply sym_bequiv. assumption.
+    + apply sym_cequiv. assumption.
+    + apply sym_cequiv. assumption.
+Qed.
 (** [] *)
 
 (** For example, here are two equivalent programs and a proof of their
@@ -1082,7 +1185,14 @@ Proof.
       apply trans_cequiv with c2; try assumption.
       apply if_false; assumption.
   - (* while *)
-    (* FILL IN HERE *) Admitted.
+    assert (bequiv b (fold_constants_bexp b)). {
+        apply fold_constants_bexp_sound. }
+    destruct (fold_constants_bexp b) eqn:Heqb; 
+    try (apply CWhile_congruence; assumption).
+    + apply (while_true b c H).
+    + apply (while_false b c H).
+Qed.
+      
 (** [] *)
 
 (* ----------------------------------------------------------------- *)
@@ -1284,7 +1394,15 @@ Proof.
 Theorem inequiv_exercise:
   ~ cequiv <{ while true do skip end }> <{ skip }>.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold not. 
+  intros H.
+  remember (X !-> 1) as st.
+  apply (while_true_nonterm <{ true }> <{ skip }> st st).
+  apply refl_bequiv.
+  subst.
+  apply H.
+  apply E_Skip.
+Qed.
 (** [] *)
 
 (* ################################################################# *)
