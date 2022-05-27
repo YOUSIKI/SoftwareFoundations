@@ -238,6 +238,17 @@ Qed.
 Theorem provable_true_post : forall c P,
     derivable P c True.
 Proof.
+  intros. induction c.
+  - eapply H_Consequence with (P:=P).
+    eapply H_Skip.
+    intros.
+    apply H.
+    intros.
+    simpl.
+    auto.
+  - eapply H_Consequence with (P:=P).
+    eapply H_Asgn.
+    intros.
   (* FILL IN HERE *) Admitted.
 
 (** [] *)
@@ -333,7 +344,11 @@ Proof. eauto. Qed.
 Lemma wp_seq : forall P Q c1 c2,
     derivable P c1 (wp c2 Q) -> derivable (wp c2 Q) c2 Q -> derivable P <{c1; c2}> Q.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  apply H_Seq with (Q:=(wp c2 Q)).
+  apply X.
+  apply X0.
+Qed.
 
 (** [] *)
 
@@ -346,7 +361,16 @@ Proof.
 Lemma wp_invariant : forall b c Q,
     valid (wp <{while b do c end}> Q /\ b) c (wp <{while b do c end}> Q).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold valid.
+  unfold wp.
+  intros.
+  inversion H0.
+  apply H2.
+  eapply E_WhileTrue.
+  apply H3.
+  apply H.
+  apply H1.
+Qed.
 
 (** [] *)
 
@@ -366,9 +390,78 @@ Proof.
 Theorem hoare_complete: forall P c Q,
   valid P c Q -> derivable P c Q.
 Proof.
+  Hint Constructors derivable : core.
   unfold valid. intros P c. generalize dependent P.
   induction c; intros P Q HT.
-  (* FILL IN HERE *) Admitted.
+  1:{
+    apply H_Consequence with (P':=P) (Q':=Q).
+    all: eauto.
+  }
+  2:{
+    apply H_Seq with (Q:=(wp c2 Q)).
+    * apply IHc1.
+      intros.
+      unfold wp.
+      intros.
+      eapply HT.
+      eapply E_Seq.
+      eapply H.
+      eapply H1.
+      eapply H0.
+    * apply IHc2.
+      unfold wp.
+      intros.
+      eapply H0.
+      apply H.
+  }
+  2:{
+    apply H_If.
+    * apply IHc1.
+      intros.
+      eapply HT.
+      eapply E_IfTrue.
+      apply H0.
+      apply H.
+      apply H0.
+    * apply IHc2.
+      intros.
+      eapply HT.
+      eapply E_IfFalse.
+      eapply Bool.not_true_iff_false.
+      apply H0.
+      apply H.
+      apply H0.
+  }
+  2:{
+    eapply H_Consequence.
+    eapply H_While with (b:=b) (c:=c) (P:=wp <{ while b do c end }> Q).
+    apply IHc.
+    apply wp_invariant.
+    intros.
+    unfold wp.
+    intros.
+    eapply HT.
+    eapply H0.
+    apply H.
+    intros.
+    eapply H.
+    apply E_WhileFalse.
+    inversion H.
+    apply Bool.not_true_iff_false.
+    apply H1.
+  }
+  1:{
+    eapply H_Consequence.
+    eapply H_Asgn with (Q:=Q) (V:=x) (a:=a).
+    intros.
+    eapply HT.
+    eapply E_Asgn.
+    reflexivity.
+    apply H.
+    intros.
+    apply H.
+  }
+Qed.
 
 (** [] *)
 

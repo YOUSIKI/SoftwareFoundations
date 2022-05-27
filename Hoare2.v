@@ -261,15 +261,15 @@ These decorations were constructed as follows:
 
        {{ True }}
       if X <= Y then
-          {{                         }} ->>
-          {{                         }}
+          {{ True /\ X <= Y }} ->>
+          {{ Y = X + (Y - X) }}
         Z := Y - X
-          {{                         }}
+          {{ Y = X + Z }}
       else
-          {{                         }} ->>
-          {{                         }}
+          {{ True /\ ~ (X <= Y) }} ->>
+          {{ X + Z = X + Z }}
         Y := X + Z
-          {{                         }}
+          {{ Y = X + Z }}
       end
         {{ Y = X + Z }}
 
@@ -677,7 +677,27 @@ Qed.
     Write an informal decorated program showing that this procedure
     is correct, and justify each use of [->>]. *)
 
-(* FILL IN HERE *)
+(* 
+      {{ X = m }}
+    Y := 0;
+      {{ X = m /\ Y = 0 }} ->>
+      {{ X + Y = m }}
+    while ~(X = 0) do
+      {{ X + Y = m /\ ~(X = 0) }} ->>
+      {{ (X - 1) + (Y + 1) = m }}
+      X := X - 1;
+      {{ X + (Y + 1) = m }}
+      Y := Y + 1
+      {{ X + Y = m }}
+    end
+      {{ X + Y = m /\ (X = 0) }} ->>
+      {{ Y = m }}
+
+  The first and the last use of [->>] are trivial.
+  And under the assumption that [~(X = 0)], we have
+  [(X - 1) + (Y + 1) = m]. Together with the assumption
+  [X + Y = m], this implies [(X - 1) + (Y + 1) = m].
+ *)
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_decorations_in_slow_assignment : option (nat*string) := None.
@@ -965,21 +985,24 @@ Proof.
     Excluding both operations from your loop invariant is advisable.
 
     {{ X = m }} ->>
-    {{                                      }}
+    {{ 1 * X! = m! }}
   Y := 1;
-    {{                                      }}
+    {{ Y * X! = m! }}
   while ~(X = 0)
-  do   {{                                      }} ->>
-       {{                                      }}
+  do   {{ Y * X! = m! /\ ~(X = 0) }} ->>
+       {{ (Y * X) * (X - 1)! = m! }}
      Y := Y * X;
-       {{                                      }}
+       {{ Y * (X - 1)! = m! }}
      X := X - 1
-       {{                                      }}
+       {{ Y * X! = m! }}
   end
-    {{                                      }} ->>
+    {{ Y * X! = m! /\ X = 0 }} ->>
     {{ Y = m! }}
 
     Briefly justify each use of [->>].
+    The first use of [->>] is trivial.
+    The second use of [->>] is similar to slow_assignment.
+    The third use of [->>] is also straightforward if [X! = 0! = 1].
 *)
 
 (* Do not modify the following line: *)
@@ -1007,24 +1030,24 @@ Definition manual_grade_for_decorations_in_factorial : option (nat*string) := No
 (**
 
   {{ True }} ->>
-  {{                    }}
+  {{ 0 + (min a b) = (min a b) }}
   X := a;
-  {{                       }}
+  {{ 0 + (min X b) = (min a b) }}
   Y := b;
-  {{                       }}
+  {{ 0 + (min X Y) = (min a b) }}
   Z := 0;
-  {{                       }}
+  {{ Z + (min X Y) = (min a b) }}
   while ~(X = 0) && ~(Y = 0) do
-    {{                                     }} ->>
-    {{                                }}
+    {{ Z + (min X Y) = (min a b) /\ ~(X = 0) && ~(Y = 0) }} ->>
+    {{ (Z + 1) + (min (X - 1) (Y - 1)) = (min a b) }}
     X := X - 1;
-    {{                            }}
+    {{ (Z + 1) + (min X (Y - 1)) = (min a b) }}
     Y := Y - 1;
-    {{                        }}
+    {{ (Z + 1) + (min X Y) = (min a b) }}
     Z := Z + 1
-    {{                       }}
+    {{ Z + (min X Y) = (min a b) }}
   end
-  {{                            }} ->>
+  {{ Z + (min X Y) = (min a b) /\ ~(~(X = 0) && ~(Y = 0)) }} ->>
   {{ Z = min a b }}
 *)
 
@@ -1052,32 +1075,32 @@ Definition manual_grade_for_decorations_in_Min_Hoare : option (nat*string) := No
     following decorated program.
 
       {{ True }} ->>
-      {{                                        }}
+      {{ (a - 0) + (b - 0) + c = a + b + c }}
     X := 0;
-      {{                                        }}
+      {{ (a - X) + (b - 0) + c = a + b + c }}
     Y := 0;
-      {{                                        }}
+      {{ (a - X) + (b - Y) + c = a + b + c }}
     Z := c;
-      {{                                        }}
+      {{ (a - X) + (b - Y) + Z = a + b + c }}
     while ~(X = a) do
-        {{                                        }} ->>
-        {{                                        }}
+        {{ (a - X) + (b - Y) + Z = a + b + c  /\ ~(X = a) }} ->>
+        {{ (a - (X + 1)) + (b - Y) + (Z + 1) = a + b + c }}
       X := X + 1;
-        {{                                        }}
+        {{ (a - X) + (b - Y) + (Z + 1) = a + b + c }}
       Z := Z + 1
-        {{                                        }}
+        {{ (a - X) + (b - Y) + Z = a + b + c }}
     end;
-      {{                                        }} ->>
-      {{                                        }}
+      {{ (a - X) + (b - Y) + Z = a + b + c /\ (X = a) }} ->>
+      {{ (b - Y) + Z = a + b + c /\ (X = a) }}
     while ~(Y = b) do
-        {{                                        }} ->>
-        {{                                        }}
+        {{ (b - Y) + Z = a + b + c /\ ~(Y = b) }} ->>
+        {{ (b - (Y + 1)) + (Z + 1) = a + b + c }}
       Y := Y + 1;
-        {{                                        }}
+        {{ (b - Y) + (Z + 1) = a + b + c }}
       Z := Z + 1
-        {{                                        }}
+        {{ (b - Y) + Z = a + b + c }}
     end
-      {{                                        }} ->>
+      {{ (b - Y) + Z = a + b + c /\ (Y = b) }} ->>
       {{ Z = a + b + c }}
 *)
 
