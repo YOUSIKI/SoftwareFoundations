@@ -1,0 +1,11 @@
+{
+    "files.exclude": {
+        "**/*.aux": true,
+        "**/*.vo": true,
+        "**/*.vok": true,
+        "**/*.vos": true,
+        "**/*.glob": true,
+        "**/*.cache": true,
+        "**/*.coq.d": true,
+    }
+}
