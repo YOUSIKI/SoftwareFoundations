@@ -198,7 +198,10 @@ Example test_step_2 :
           (C 2)
           (C 4)).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  apply ST_Plus2.
+  apply ST_Plus2.
+  apply ST_PlusConstConst.
+Qed.
 (** [] *)
 
 End SimpleArith1.
@@ -458,7 +461,37 @@ Inductive step : tm -> tm -> Prop :=
 Theorem step_deterministic :
   deterministic step.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold deterministic. intros x y1 y2 Hy1 Hy2.
+  generalize dependent y2.
+  induction Hy1; intros y2 Hy2.
+  - (* ST_PlusConstConst *) inversion Hy2; subst.
+    + (* ST_PlusConstConst *) reflexivity.
+    + (* ST_Plus1 *) inversion H2.
+    + (* ST_Plus2 *) inversion H3.
+  - (* ST_Plus1 *) inversion Hy2; subst.
+    + (* ST_PlusConstConst *)
+      inversion Hy1.
+    + (* ST_Plus1 *)
+      apply IHHy1 in H2. rewrite H2. reflexivity.
+    + (* ST_Plus2 *)
+      inversion H1.
+      rewrite <- H in Hy2.
+      rewrite <- H in IHHy1.
+      rewrite <- H in Hy1.
+      inversion Hy1.
+  - (* ST_Plus2 *) inversion Hy2; subst.
+    + (* ST_PlusConstConst *)
+      inversion Hy1.
+    + (* ST_Plus1 *) 
+      inversion H.
+      rewrite <- H0 in H3.
+      rewrite <- H0 in Hy2.
+      inversion H3.
+    + (* ST_Plus2 *)
+      inversion H2.
+      rewrite <- H0 in Hy2.
+      apply IHHy1 in H4. rewrite H4. reflexivity.
+Qed.
 (** [] *)
 
 (* ================================================================= *)
@@ -1021,7 +1054,14 @@ Lemma test_multistep_4:
         (C 0)
         (C (2 + (0 + 3))).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  eapply multi_step. {
+    apply ST_Plus2. apply v_const. apply ST_Plus2. apply v_const. apply ST_PlusConstConst.
+  }
+  eapply multi_step. {
+    apply ST_Plus2. apply v_const. apply ST_PlusConstConst.
+  }
+  apply multi_refl.
+Qed.
 (** [] *)
 
 (* ================================================================= *)
@@ -1088,7 +1128,15 @@ Lemma multistep_congr_2 : forall t1 t2 t2',
      t2 -->* t2' ->
      P t1 t2 -->* P t1 t2'.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  induction H0.
+  constructor.
+  eapply multi_step with (P t1 y).
+  eapply ST_Plus2.
+  eapply H.
+  eapply H0.
+  eapply IHmulti.
+Qed.
 (** [] *)
 
 (** With these lemmas in hand, the main proof is a straightforward
@@ -1196,7 +1244,20 @@ Theorem eval__multistep : forall t n,
     includes [-->]. *)
 
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  induction H.
+  constructor.
+  eapply multi_trans.
+  apply multistep_congr_1.
+  apply IHeval1.
+  eapply multi_trans.
+  apply multistep_congr_2.
+  constructor.
+  apply IHeval2.
+  eapply multi_step.
+  constructor.
+  constructor.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, advanced (eval__multistep_inf)
@@ -1220,7 +1281,28 @@ Lemma step__eval : forall t t' n,
      t  ==> n.
 Proof.
   intros t t' n Hs. generalize dependent n.
-  (* FILL IN HERE *) Admitted.
+  induction Hs.
+  intros.
+  inversion H.
+  subst.
+  constructor.
+  constructor.
+  constructor.
+  intros.
+  inversion H.
+  apply IHHs in H2.
+  constructor.
+  apply H2.
+  apply H4.
+  intros.
+  inversion H.
+  subst.
+  inversion H0.
+  apply IHHs in H5.
+  constructor.
+  apply H3.
+  apply H5.
+Qed. 
 (** [] *)
 
 (** The fact that small-step reduction implies big-step evaluation is now
@@ -1233,10 +1315,45 @@ Proof.
     work on the proof.  *)
 
 (** **** Exercise: 3 stars, standard (multistep__eval) *)
+Lemma multistep__eval_lemma : forall t, exists n,
+  t ==> n.
+Proof.
+  induction t.
+  - exists n. constructor.
+  - inversion IHt1.
+    inversion IHt2.
+    exists (x + x0).
+    constructor.
+    apply H.
+    apply H0.
+Qed.
+
 Theorem multistep__eval : forall t t',
   normal_form_of t t' -> exists n, t' = C n /\ t ==> n.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  assert (G1 := multistep__eval_lemma t).
+  inversion G1.
+  exists x.
+  inversion H.
+  assert (G2 := eval__multistep t x).
+  assert (G4 := H0).
+  apply G2 in H0.
+  split.
+  assert (G3 := normal_forms_unique t t' (C x)).
+  apply G3.
+  assumption.
+  unfold normal_form_of.
+  split.
+  assumption.
+  unfold step_normal_form.
+  unfold normal_form.
+  unfold not.
+  intros.
+  inversion H3.
+  inversion H4.
+  assumption.
+Qed.
 (** [] *)
 
 (* ================================================================= *)
@@ -1813,7 +1930,8 @@ Theorem normalize_ex : exists e',
   (P (C 3) (P (C 2) (C 1)))
   -->* e' /\ value e'.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  eexists. split. normalize. apply v_const.
+Qed.
 (** [] *)
 
 (** **** Exercise: 1 star, standard, optional (normalize_ex')
