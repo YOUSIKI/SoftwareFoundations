@@ -183,7 +183,23 @@ Hint Unfold stuck : core.
 Example some_term_is_stuck :
   exists t, stuck t.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold stuck.
+  unfold step_normal_form.
+  unfold not.
+  exists (iszro tru).
+  split.
+  intros.
+  inversion H.
+  subst.
+  inversion H0.
+  subst.
+  inversion H2.
+  intros.
+  inversion H.
+  subst.
+  inversion H0.
+  inversion H0.
+Qed.
 (** [] *)
 
 (** However, although values and normal forms are _not_ the same in
@@ -192,10 +208,48 @@ Proof.
     define things so that some value could still take a step. *)
 
 (** **** Exercise: 3 stars, standard (value_is_nf) *)
+Lemma value_is_nf' : forall t,
+  value t -> step_normal_form t.
+Proof.
+  intros.
+  unfold normal_form.
+  unfold not; intros.
+  inversion H0;subst.
+  inversion H.
+  inversion H2; subst; inversion H1.
+  generalize dependent x.
+  induction H2; intros.
+  inversion H1.
+  inversion H1; subst.
+  eapply IHnvalue.
+  right;assumption.
+  exists t1'; assumption.
+  apply H4.
+Qed.
+
 Lemma value_is_nf : forall t,
   value t -> step_normal_form t.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold normal_form.
+  unfold not.
+  intros.
+  inversion H0; subst.
+  inversion H; subst.
+  inversion H2; subst; try inversion H1.
+  generalize dependent x.
+  induction H2.
+  - intros.
+    inversion H1.
+  - intros.
+    inversion H1; subst.
+    eapply IHnvalue.
+    right.
+    assumption.
+    inversion H1; subst.
+    exists t1'.
+    assumption.
+    eapply H4.
+Qed.
 
 (** (Hint: You will reach a point in this proof where you need to
     use an induction to reason about a term that is known to be a
@@ -382,7 +436,26 @@ Proof.
     + (* t1 can take a step *)
       destruct H as [t1' H1].
       exists (test t1' t2 t3). auto.
-  (* FILL IN HERE *) Admitted.
+  - destruct IHHT.
+    + left. apply (nat_canonical t1 HT) in H.
+      destruct H. auto. auto.
+    + right. destruct H. exists (scc x).
+      auto.
+  - destruct IHHT.
+    + apply (nat_canonical t1 HT) in H.
+      destruct H.
+      right. exists zro. eauto.
+      right. exists t. eauto.
+    + right.
+      destruct H.
+      exists (prd x). eauto.
+  - destruct IHHT.
+    apply (nat_canonical t1 HT) in H.
+    destruct H.
+    right. exists tru. eauto.
+    right. exists fls. eauto.
+    right. destruct H. exists (iszro x). eauto.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, advanced (finish_progress_informal)
@@ -451,7 +524,20 @@ Proof.
       + (* ST_TestFls *) assumption.
       + (* ST_Test *) apply T_Test; try assumption.
         apply IHHT1; assumption.
-    (* FILL IN HERE *) Admitted.
+    - inversion HE; subst; try assumption.
+      apply T_Scc. apply IHHT. assumption.
+    - inversion HE; subst; try assumption.
+      inversion HT; subst; try assumption.
+      constructor.
+      apply IHHT.
+      assumption.
+    - inversion HE; subst; try assumption.
+      eauto.
+      eauto.
+      constructor.
+      apply IHHT.
+      assumption.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, advanced (finish_preservation_informal)
@@ -502,7 +588,26 @@ Theorem preservation' : forall t t' T,
   t --> t' ->
   |- t' \in T.
 Proof with eauto.
-  (* FILL IN HERE *) Admitted.
+  intros t t' T HT HE.
+  generalize dependent T.
+  induction HE;
+  intros;
+  try solve_by_invert.
+  - inversion HT. assumption.
+  - inversion HT. assumption.
+  - inversion HT. subst. apply T_Test; try assumption.
+    apply IHHE. assumption.
+  - inversion HT. subst. constructor. apply IHHE. assumption.
+  - inversion HT. subst. constructor.
+  - inversion HT. subst. inversion H1. assumption.
+  - inversion HT. subst. constructor. apply IHHE. assumption.
+  - inversion HT. subst. constructor.
+  - inversion HT. subst. constructor.
+  - inversion HT. subst. constructor.
+    apply IHHE. assumption.
+Qed.
+
+
 (** [] *)
 
 (** The preservation theorem is often called _subject reduction_,
