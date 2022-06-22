@@ -479,26 +479,38 @@ Definition manual_grade_for_subtype_order : option (nat*string) := None.
           S <: T  ->
           S->S   <:  T->T
 
+      false
+
       forall S,
            S <: A->A ->
            exists T,
               S = T->T  /\  T <: A
+
+      false
 
       forall S T1 T2,
            (S <: T1 -> T2) ->
            exists S1 S2,
               S = S1 -> S2  /\  T1 <: S1  /\  S2 <: T2 
 
+      true
+
       exists S,
            S <: S->S 
 
+      false
+
       exists S,
            S->S <: S  
+      
+      true
 
       forall S T1 T2,
            S <: T1*T2 ->
            exists S1 S2,
               S = S1*S2  /\  S1 <: T1  /\  S2 <: T2  
+
+      true
 *)
 
 (* Do not modify the following line: *)
@@ -508,31 +520,31 @@ Definition manual_grade_for_subtype_instances_tf_2 : option (nat*string) := None
 (** **** Exercise: 1 star, standard (subtype_concepts_tf)
 
     Which of the following statements are true, and which are false?
-    - There exists a type that is a supertype of every other type.
+    - There exists a type that is a supertype of every other type. true
 
-    - There exists a type that is a subtype of every other type.
+    - There exists a type that is a subtype of every other type. false
 
     - There exists a pair type that is a supertype of every other
-      pair type.
+      pair type. true
 
     - There exists a pair type that is a subtype of every other
-      pair type.
+      pair type. false
 
     - There exists an arrow type that is a supertype of every other
-      arrow type.
+      arrow type. false
 
     - There exists an arrow type that is a subtype of every other
-      arrow type.
+      arrow type. false
 
     - There is an infinite descending chain of distinct types in the
       subtype relation---that is, an infinite sequence of types
       [S0], [S1], etc., such that all the [Si]'s are different and
-      each [S(i+1)] is a subtype of [Si].
+      each [S(i+1)] is a subtype of [Si]. true
 
     - There is an infinite _ascending_ chain of distinct types in
       the subtype relation---that is, an infinite sequence of types
       [S0], [S1], etc., such that all the [Si]'s are different and
-      each [S(i+1)] is a supertype of [Si].
+      each [S(i+1)] is a supertype of [Si]. false
 
 *)
 
@@ -605,10 +617,13 @@ Definition manual_grade_for_small_large_2 : option (nat*string) := None.
 
        exists S,
          empty |- (\p:(A*T). (p.snd) (p.fst)) \in S
+      
+      No such type.
 
    - What is the _largest_ type [T] that makes the same
      assertion true?
 
+      A -> Top
 *)
 
 (* Do not modify the following line: *)
