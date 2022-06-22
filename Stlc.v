@@ -435,7 +435,20 @@ Check <{[x:=true] x}>.
 Inductive substi (s : tm) (x : string) : tm -> tm -> Prop :=
   | s_var1 :
       substi s x (tm_var x) s
-  (* FILL IN HERE *)
+  | s_var2 : forall y : string, x <> y ->
+      substi s x (tm_var y) (tm_var y)
+  | s_abs1 : forall t T,
+      substi s x <{\x:T, t}> <{\x:T, t}>
+  | s_abs2 : forall t T y, x <> y ->
+      substi s x <{\y:T, t}> <{\y:T, [x:=s] t}>
+  | s_app : forall t1 t2,
+      substi s x <{t1 t2}> <{([x:=s] t1) ([x:=s] t2)}>
+  | s_true :
+      substi s x <{true}> <{true}>
+  | s_false :
+      substi s x <{false}> <{false}>
+  | s_if : forall t1 t2 t3,
+      substi s x <{if t1 then t2 else t3}> <{if ([x:=s] t1) then ([x:=s] t2) else ([x:=s] t3)}>
 .
 
 Hint Constructors substi : core.
@@ -443,7 +456,44 @@ Hint Constructors substi : core.
 Theorem substi_correct : forall s x t t',
   <{ [x:=s]t }> = t' <-> substi s x t t'.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  split.
+  {
+    intros; subst.
+    induction t; subst; simpl.
+    destruct (eqb_string x0 s0) eqn:Heq.
+    apply eqb_string_true_iff in Heq; subst.
+    apply s_var1.
+    apply eqb_string_false_iff in Heq; subst.
+    apply s_var2. assumption.
+    apply s_app.
+    destruct (eqb_string x0 s0) eqn:Heq.
+    apply eqb_string_true_iff in Heq; subst.
+    apply s_abs1.
+    apply eqb_string_false_iff in Heq; subst.
+    apply s_abs2. assumption.
+    apply s_true.
+    apply s_false.
+    apply s_if.
+  }
+  {
+    intros; subst.
+    induction H; subst; simpl.
+    rewrite <- eqb_string_refl.
+    reflexivity.
+    rewrite <- eqb_string_false_iff in H.
+    rewrite H.
+    reflexivity.
+    rewrite <- eqb_string_refl.
+    reflexivity.
+    rewrite <- eqb_string_false_iff in H.
+    rewrite H.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+  }
+Qed.
 (** [] *)
 
 (* ================================================================= *)
@@ -635,14 +685,20 @@ Proof. normalize.  Qed.
 Lemma step_example5 :
        <{idBBBB idBB idB}>
   -->* idB.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. normalize.  Qed.
 
 Lemma step_example5_with_normalize :
        <{idBBBB idBB idB}>
   -->* idB.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  eapply multi_step.
+    apply ST_App1. auto.
+  eapply multi_step.
+    apply ST_AppAbs. auto.
+  simpl.
+  apply multi_refl.
+Qed.
+  
 (** [] *)
 
 (* ################################################################# *)
@@ -799,7 +855,23 @@ Example typing_example_3 :
                (y (x z)) \in
       T.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  exists <{(Bool->Bool)->(Bool->Bool)->Bool->Bool}>.
+  apply T_Abs.
+  apply T_Abs.
+  apply T_Abs.
+  eapply T_App with <{Bool}>.
+  apply T_Var.
+  apply update_neq.
+  intros Contra.
+  inversion Contra.
+  eapply T_App with <{Bool}>.
+  apply T_Var.
+  apply update_neq.
+  intros Contra.
+  inversion Contra.
+  apply T_Var.
+  apply update_eq.
+Qed.
 (** [] *)
 
 (** We can also show that some terms are _not_ typable.  For example,
@@ -841,7 +913,23 @@ Example typing_nonexample_3 :
         empty |-
           \x:S, x x \in T).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold not.
+  intros.
+  destruct H.
+  destruct H.
+  inversion H; subst; clear H.
+  inversion H5; subst; clear H5.
+  inversion H2; subst; clear H2.
+  inversion H4; subst; clear H4.
+  inversion H2; subst; clear H2.
+  inversion H1; subst; clear H1.
+  induction T2; subst.
+  discriminate H0.
+  inversion H0.
+  subst.
+  apply IHT2_1 in H1.
+  inversion H1.
+Qed.
 (** [] *)
 
 End STLC.
