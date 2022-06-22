@@ -145,7 +145,37 @@ Theorem progress' : forall t T,
 Proof.
   intros t.
   induction t; intros T Ht; auto.
-  (* FILL IN HERE *) Admitted.
+  - inversion Ht; subst.
+    discriminate H1.
+  - right.
+    inversion Ht; subst.
+    assert (H := H2).
+    apply IHt1 in H2.
+    apply IHt2 in H4.
+    inversion H2; clear H2; inversion H4; clear H4; subst.
+    + eapply canonical_forms_fun in H; [|assumption].
+      destruct H as [x [t0 H3]]; subst.
+      exists (<{ [x:=t2]t0 }>).
+      eauto.
+    + destruct H1 as [t2' Hstp].
+      exists (<{t1 t2'}>).
+      eauto.
+    + destruct H0 as [t1' Hstp].
+      exists (<{t1' t2}>).
+      eauto.
+    + destruct H0 as [t1' Hstp].
+      exists (<{t1' t2}>).
+      eauto.
+  - right.
+    inversion Ht; subst.
+    assert (H := H3).
+    apply IHt1 in H3.
+    inversion H3.
+    + destruct (canonical_forms_bool t1); subst; eauto.
+    + destruct H0 as [t1' Hstp].
+      exists <{if t1' then t2 else t3}>.
+      eauto.
+Qed.
 (** [] *)
 
 (* ################################################################# *)
@@ -459,7 +489,16 @@ Theorem unique_types : forall Gamma e T T',
   Gamma |- e \in T' ->
   T = T'.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros Gamma e T T' H H'.
+  generalize dependent T'.
+  induction H; intros; subst; try eauto.
+  inversion H'; subst. rewrite H in H2. inversion H2. reflexivity.
+  inversion H'; subst. apply IHhas_type in H5. rewrite H5. reflexivity.
+  inversion H'; subst. apply IHhas_type2 in H6. apply IHhas_type1 in H4. inversion H4. reflexivity.
+  inversion H'; subst. reflexivity.
+  inversion H'; subst. reflexivity.
+  inversion H'; subst. apply IHhas_type1 in H6. apply IHhas_type2 in H8. assumption.
+Qed.
 (** [] *)
 
 (* ################################################################# *)
